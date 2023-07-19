@@ -186,7 +186,7 @@ metadata:
   name: myapp-deployment
   labels:
     app: nginx
-    type: frontend
+    tier: frontend
 spec:
   selector:
     matchLabels:
@@ -203,8 +203,8 @@ spec:
         image: nginx
 ```
 ```
-kubectl create -f deploy.yml
-kubectl get deployments
+kubectl create -f deploy.yml --record  - создание (--record - добавляет в history причину изменения)
+kubectl get deployments - инфо
 Deployment автоматически запустит replicaset поэтому можно запустить :
 kubectl get replicaset
 kubectl get pods
@@ -214,16 +214,52 @@ kubectl describe deployment myapp-deployment - выведет описание d
 **Обновление и откат**
 
 Каждый раз при создании нового deployment или обновления образа существующим запускается rollout - это процесс постепенного развертывания
-или обновления контейнеров приложения. Rollout создает
-ревизию развертывания его отпечаток
-snapshot назовем его и vision 1 в
-будущем когда приложение будет обновлено
-то есть когда версия контейнера будет
-меняться на новую запустится новый road
-который создаст новую ревизию с именем и
-vision 2
-эта функция помогает нам отслеживать
-изменения внесенные в дипой мин и
-позволяет при необходимости вернуться к
-предыдущей развернутой версии используя
+или обновления контейнеров приложения. Rollout создает ревизию развертывания, его отпечаток snapshot назовем его revision 1. В будущем когда приложение будет обновлено то есть когда версия контейнера будет меняться на новую запустится новый rollout который создаст новую ревизию с именем revision 2. эта функция помогает нам отслеживать изменения внесенные в deployment и позволяет при необходимости вернуться к предыдущей развернутой версии.
+```
+kubectl rollout status deploy myapp-deployment - состояние выкатки
+kubectl rollout history deploy myapp-deployment - просмотр списка ревизий и истории изменения
+```
+Стратегия Recreate - убиваем все контейнеры, потом поднимаем все контейнеры - есть время простоя
+
+Rolling update - убиваем и поднимае по одному контейнеру (стандартная стратения deployment)
+
+Разницв Recreate и Rolling update видна через (по созданию, убийству контейнеров)
+```
+kubectl describle deployments.apps myapp-deployment
+```
+
+**Обновление версии**
+```
+меняем в манифесте image: nginx: 1.7.1 дадее
+kubectl apply -f deploy.yml
+
+kubectl set image deployment/myapp-deployment nginx=nginx:1.7.1 - обновления образа, но в манифесте останется станое
+```
+Deployment при обновлении создает еще один replicaset2 и убивает поды в replicaset1, запускает их в replicaset2.
+
+Если надо откатить изменения:
+```
+kubectl rollout undo deployment/myapp-deployment
+```
+**Команды:**
+```
+kubectl create -f deploy.yml - создание
+kubectl get deployments - инфо
+kubectl apply -f deploy.yml - принятие изменений
+kubectl set image deployment/myapp-deployment nginx=nginx:1.7.1 - изменения
+kubectl set deployments myapp-deployment --replicas=2 - изменения
+kubectl rollout status deployment/myapp-deployment - состояние выкатки
+kubectl rollout history deployment/myapp-deployment - просмотр списка ревизий и истории изменения
+kubectl rollout undo deployment/myapp-deployment - откат
+kubectl delete deploy myapp-deployment - удаление
+```
+**Сетевое взаимодействие**
+
+В кубернетес ip адрес назначается поду (стандарнтые адреса  10.224.0.0) На одном узле все просто - кубернетес поднимает стандартную четь и поды могут через нее взаимодействовать.
+
+Если на одном узле у нас несколько нод то не будет работать если узлы являются частью одного кластера, для подов назначены одинаковые ip это приведет конфликтом адресов в сети. когда мы занимаемся настройке кластера kubernetes автоматически не настраивает какие-либо сети чтобы решить эту нашу проблему. Собственно говоря kubernetes ожидает что мы сами настроим сеть удовлетворяющюю его базовым требованиям. Основные из этих требований заключаются в том что все контейнеры или поды в кластере kubernetes должны иметь возможность связываться друг с другом без необходимости настройки NAT, все ноды должны иметь возможность связываться с контейнерами и все контейнеры должны иметь возможность связываться с нодами в кластере.
+
+Есть готовые решения - calico, flannel, cilium, weave, vmware nsx и другие
+
+
 
