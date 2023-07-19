@@ -122,7 +122,7 @@ spec:
   replicas: 3
 ```
 ```
-kubectl create -f rc.yml
+kubectl create -f rcontroller.yml
 kubectl get replicationcontroller
 kubectl get pods
 ```
@@ -147,8 +147,83 @@ spec:
       - name: nginx-container
         image: nginx
   replicas: 3
-  selector: 
+  selector:
+    matchLabels:
+      type: frontend
+```
+```
+kubectl create -f rset.yml
+kubectl get replicaset
+kubectl get pods
+```
+Надо больше реплик - меняем replicas: 6 в rset.yml и запускаем repalce:
+```
+kubectl replace -f rset.yml - обновит набор реплик до требуемого значение 
+```
+или
+```
+kubectl scale --replicas=6 -f rset.yml
+kubectl scale --replicas=6 -f myapp-rc - по имени! но не сохранит все в файл! при перезапуске будет запущено что было ранее
+```
+Редактирование в системе
+```
+kubectl edit rs myapp-rc - откроет копию в vi и после редакции проверит на ошибки, перепишет файл и применить (например запустит доп ноды)
+```
+Удаление
+```
+kubectl delete replicaset rset.yml
 ```
 
+**Deployment**
 
+После обновления важных компонетов, нам нужен процесс который обновит контейнеры один за другим, такое обновление называется rollin update. Предположим что одно из выполненных нами обновлений привело к непредвиденной ошибке и нас попросят отменить последнее действие, нам нужна возможность откатиться от недавно внесенных изменений, наконец если нам требуется внести изменения в свою среду например пропатчить ОС ноды или изменить распределение ресурсов вкупе с масштабированием или какие то другие вещи и мы не хотим применять каждое изменение сразу после исполнения команды, а предпочитаем поставить нагрузку на паузу и произвести требуемые изменения, а затем возобновить работу чтобы все изменения развертывались вместе все эти возможности доступны в **deployment**
+
+Deployment выше в иерархии и обладает всем свойствами pod и replicaset
+```yml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp-deployment
+  labels:
+    app: nginx
+    type: frontend
+spec:
+  selector:
+    matchLabels:
+      app: myapp
+  replicas: 4
+  template:
+    metadate:
+      name: nginx2
+      labels:
+        app: myapp
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+```
+```
+kubectl create -f deploy.yml
+kubectl get deployments
+Deployment автоматически запустит replicaset поэтому можно запустить :
+kubectl get replicaset
+kubectl get pods
+kubevtl get all - компнда покажет все deploy,rs,po
+kubectl describe deployment myapp-deployment - выведет описание deployment
+```
+**Обновление и откат**
+
+Каждый раз при создании нового deployment или обновления образа существующим запускается rollout - это процесс постепенного развертывания
+или обновления контейнеров приложения. Rollout создает
+ревизию развертывания его отпечаток
+snapshot назовем его и vision 1 в
+будущем когда приложение будет обновлено
+то есть когда версия контейнера будет
+меняться на новую запустится новый road
+который создаст новую ревизию с именем и
+vision 2
+эта функция помогает нам отслеживать
+изменения внесенные в дипой мин и
+позволяет при необходимости вернуться к
+предыдущей развернутой версии используя
 
