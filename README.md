@@ -65,7 +65,7 @@ kubectl get pods -o wide - польная информация от get pods
 ```yml
 apiVersion: v1
 kind: Pod
-metadate:
+metadata:
   name: myapp-pod
   labels:
     app: myapp
@@ -110,7 +110,7 @@ metadata:
     type: frontend
 spec:
   template: #Pod - берем из варианта с Pod
-    metadate:
+    metadata:
       name: myapp-pod
       labels:
         app: myapp
@@ -137,7 +137,7 @@ metadata:
     type: frontend
 spec:
   template: #Pod - берем из варианта с Pod
-    metadate:
+    metadata:
       name: myapp-pod
       labels:
         app: myapp
@@ -193,7 +193,7 @@ spec:
       app: myapp
   replicas: 4
   template:
-    metadate:
+    metadata:
       name: nginx2
       labels:
         app: myapp
